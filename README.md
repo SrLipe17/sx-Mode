@@ -1,30 +1,17 @@
---=====================================================
---  TROLL SX MODE | BROKENHAVEN RP
---  Cola a arma no quadril (pelvis) do personagem
---=====================================================
-
--- ===== CONFIGURAÇÕES =====
 _G.TrollSXMode = true
-_G.SelectedWeapon = "Glock" 
--- exemplos comuns: "Glock", "AK", "Shotgun", "Pistol"
+_G.SelectedWeapon = "Glock" -- MUDE PARA O NOME EXATO DA ARMA
 
--- ===== SERVIÇOS =====
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
--- ===== FUNÇÃO: pegar arma pelo nome =====
 local function getWeaponByName(name)
-    local backpack = player:WaitForChild("Backpack")
-    for _, tool in pairs(backpack:GetChildren()) do
+    for _, tool in pairs(player.Backpack:GetChildren()) do
         if tool:IsA("Tool") and tool.Name == name then
             return tool
         end
     end
-    return nil
 end
 
--- ===== FUNÇÃO: limpar welds antigos =====
 local function clearWelds(handle)
     for _, v in pairs(handle:GetChildren()) do
         if v:IsA("Weld") or v:IsA("Motor6D") or v:IsA("WeldConstraint") then
@@ -33,64 +20,47 @@ local function clearWelds(handle)
     end
 end
 
--- ===== FUNÇÃO PRINCIPAL: colar arma no quadril =====
 local function attachWeaponToPelvis(tool)
     local char = player.Character or player.CharacterAdded:Wait()
     local humanoid = char:WaitForChild("Humanoid")
+    local pelvis = char:FindFirstChild("LowerTorso") or char:FindFirstChild("HumanoidRootPart")
 
-    local pelvis =
-        char:FindFirstChild("LowerTorso")
-        or char:FindFirstChild("HumanoidRootPart")
-        or char:FindFirstChild("Torso")
+    if not pelvis then return end
 
-    if not pelvis then
-        warn("Pelvis não encontrada")
-        return
-    end
-
-    local handle = tool:WaitForChild("Handle")
-
-    -- equipa a arma
     humanoid:EquipTool(tool)
     task.wait(0.1)
 
-    -- remove weld padrão da mão
+    local handle = tool:WaitForChild("Handle")
     clearWelds(handle)
 
     handle.Anchored = false
     handle.CanCollide = false
     handle.Massless = true
 
-    -- cria weld novo
     local weld = Instance.new("WeldConstraint")
     weld.Part0 = pelvis
     weld.Part1 = handle
     weld.Parent = handle
 
-    -- posição da arma no quadril (AJUSTÁVEL)
     handle.CFrame =
         pelvis.CFrame
-        * CFrame.new(0, -0.9, -0.6) -- altura + avanço
-        * CFrame.Angles(0, math.rad(180), 0) -- apontada pra frente
+        * CFrame.new(0, -0.9, -0.6)
+        * CFrame.Angles(0, math.rad(180), 0)
 end
 
--- ===== ATIVAÇÃO =====
-local function activateTrollSX()
-    if not _G.TrollSXMode then return end
-
+local function run()
     local weapon = getWeaponByName(_G.SelectedWeapon)
     if weapon then
         attachWeaponToPelvis(weapon)
+        warn("TROLL SX MODE ATIVADO")
     else
-        warn("Arma não encontrada no inventário: "..tostring(_G.SelectedWeapon))
+        warn("ARMA NÃO ENCONTRADA NO BACKPACK")
     end
 end
 
--- ===== AUTO REAPLICAR APÓS RESPAWN =====
 player.CharacterAdded:Connect(function()
     task.wait(1)
-    activateTrollSX()
+    run()
 end)
 
--- ===== EXECUTAR =====
-activateTrollSX()
+run()
